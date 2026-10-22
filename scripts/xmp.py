@@ -173,10 +173,10 @@ def recent_names(pg, n=2000):
     return out
 
 
-def next_seq(pg, date6):
-    """当天全组合在一起的下一个素材序号：XMP 最新 2000 条 + 本地 已上传/输入。"""
+def next_seq(pg, date6, designer='ZHM'):
+    """该设计师当天的下一个素材序号：XMP 最新 2000 条 + 本地 已上传/输入（新旧编号格式都算）。"""
     from naming import scan_mids, local_names
-    used = scan_mids(date6, recent_names(pg) + local_names())
+    used = scan_mids(date6, recent_names(pg) + local_names(), designer)
     return (max(used) + 1 if used else 1), used
 
 
@@ -199,7 +199,7 @@ if __name__ == '__main__':
         elif cmd == 'seq':
             import datetime
             d6 = sys.argv[2] if len(sys.argv) > 2 else datetime.date.today().strftime('%y%m%d')
-            n, used = next_seq(pg, d6)
+            n, used = next_seq(pg, d6, sys.argv[3] if len(sys.argv) > 3 else 'ZHM')
             for s, keys in sorted(used.items()): print(f'已用 {s}:', *keys, sep='\n   ')
             print('NEXT', n)
         elif cmd == 'folders':

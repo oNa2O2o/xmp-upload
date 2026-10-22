@@ -11,7 +11,7 @@ CH = {'FB': 'Facebook', 'GG': 'Google', 'TT': 'Tiktok'}
 
 def target(path):
     n = os.path.basename(path)
-    m = re.match(r'\d{6}-([A-Z]+)-V-[^-]+-(男性向|女性向|全性向)-.*-(FB|GG|TT)-[A-Z]{2,4}-[竖横方]-\d+\.\w+$', n)
+    m = re.match(r'\d{6}-([A-Z]+)-[VP]-[^-]+-(男性向|女性向|全性向)-.*-(FB|GG|TT)-[A-Z]{2,4}-[竖横方]-\d+\.\w+$', n)
     if not m: raise SystemExit(f'文件名不符合命名规则，推不出文件夹: {n}')
     return f'{m.group(1)}/{CH[m.group(3)]}/{m.group(2)}'
 
