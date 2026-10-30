@@ -1,6 +1,7 @@
 """XMP helper: drive a dedicated Chrome (profile F:\\钟海明\\素材命名上传\\.xmp_profile, CDP 9333).
 Default is headless (no window, doesn't disturb the user). `python xmp.py login` restarts it with a window for re-login.
-CLI: python xmp.py check | login | headless | folders | id <JP/Facebook/男性向> | ls <JP/Facebook/男性向> | open <path>"""
+CLI: python xmp.py check | login | headless | folders | id <JP/Facebook/男性向> | ls <JP/Facebook/男性向> | open <path>
+     | show <JP/Facebook/男性向> [...] [--print]   用户自己的默认浏览器打开这些文件夹的素材列表（上传完成后给用户看）"""
 import sys, json, time, os, re, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
 
@@ -188,6 +189,14 @@ if __name__ == '__main__':
         sys.exit()
     if cmd == 'headless':
         kill_xmp_chrome(); start_chrome(headless=True); cmd = 'check'
+    if cmd == 'show':
+        ids = load_ids()
+        for path in [a for a in sys.argv[2:] if not a.startswith('--')]:
+            if path not in ids: raise SystemExit(f'folder_ids.json 里没有 {path}，先跑 python xmp.py folders')
+            url = f'{BASE}/creative/manage?folder_id={ids[path]}'
+            print(path, url)
+            if '--print' not in sys.argv: os.startfile(url)
+        sys.exit()
     with sync_playwright() as p:
         b, pg = get_page(p)
         if cmd == 'check':
