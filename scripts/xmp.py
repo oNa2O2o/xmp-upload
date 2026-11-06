@@ -1,15 +1,19 @@
-"""XMP helper: drive a dedicated Chrome (profile F:\\钟海明\\素材命名上传\\.xmp_profile, CDP 9333).
+"""XMP helper: drive a dedicated Chrome (profile <工作目录>\\.xmp_profile, CDP 端口见 config.json).
 Default is headless (no window, doesn't disturb the user). `python xmp.py login` restarts it with a window for re-login.
 CLI: python xmp.py check | login | headless | folders | id <JP/Facebook/男性向> | ls <JP/Facebook/男性向> | open <path>
      | show <JP/Facebook/男性向> [...] [--print]   用户自己的默认浏览器打开这些文件夹的素材列表（上传完成后给用户看）"""
 import sys, json, time, os, re, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config
 
-CDP = 'http://127.0.0.1:9333'
+CFG = config.load()
+PORT = CFG.get('cdp_port', 9333)
+CDP = f'http://127.0.0.1:{PORT}'
 LIB = 'MiraiMind素材库'
 BASE = 'https://xmp.mobvista.com'
-CHROME = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
-PROFILE = r'F:\钟海明\素材命名上传\.xmp_profile'
+CHROME = CFG.get('chrome') or config.find_chrome()
+PROFILE = CFG['profile']
 ID_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'folder_ids.json')
 NODES_JS = """() => [...document.querySelectorAll('.virtual-tree-node')].map((n,i)=>({i, pad: parseInt(n.style.paddingLeft)||0, top: parseFloat(n.style.top)||0,
   title: (n.querySelector('span[title]')||{}).title, leaf: !!n.querySelector('.arrow.no-child'),
@@ -35,14 +39,16 @@ def kill_xmp_chrome():
 
 
 def start_chrome(headless=True):
-    args = [CHROME, '--remote-debugging-port=9333', f'--user-data-dir={PROFILE}', '--no-first-run', '--window-size=1600,1000']
+    if not CHROME or not os.path.exists(CHROME):
+        raise SystemExit('找不到 Chrome，装好后 python scripts/config.py setup --name <姓名> --chrome <chrome.exe>')
+    args = [CHROME, f'--remote-debugging-port={PORT}', f'--user-data-dir={PROFILE}', '--no-first-run', '--window-size=1600,1000']
     if headless: args.insert(1, '--headless=new')
     subprocess.Popen(args + [BASE + '/creative/manage'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      creationflags=getattr(subprocess, 'DETACHED_PROCESS', 0) | getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0))
     for _ in range(40):
         time.sleep(0.5)
         if cdp_up(): time.sleep(2); return
-    raise SystemExit('Chrome CDP 9333 启动失败')
+    raise SystemExit(f'Chrome CDP {PORT} 启动失败')
 
 
 def ensure_chrome():
@@ -174,7 +180,8 @@ def recent_names(pg, n=2000):
     return out
 
 
-def next_seq(pg, date6, designer='ZHM'):
+def next_seq(pg, date6, designer=None):
+    designer = designer or CFG['designer']
     """该设计师当天的下一个素材序号：XMP 最新 2000 条 + 本地 已上传/输入（新旧编号格式都算）。"""
     from naming import scan_mids, local_names
     used = scan_mids(date6, recent_names(pg) + local_names(), designer)
@@ -208,7 +215,7 @@ if __name__ == '__main__':
         elif cmd == 'seq':
             import datetime
             d6 = sys.argv[2] if len(sys.argv) > 2 else datetime.date.today().strftime('%y%m%d')
-            n, used = next_seq(pg, d6, sys.argv[3] if len(sys.argv) > 3 else 'ZHM')
+            n, used = next_seq(pg, d6, sys.argv[3] if len(sys.argv) > 3 else CFG['designer'])
             for s, keys in sorted(used.items()): print(f'已用 {s}:', *keys, sep='\n   ')
             print('NEXT', n)
         elif cmd == 'folders':

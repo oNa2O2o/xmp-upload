@@ -1,8 +1,10 @@
 """archive.py <原视频> <已上传成功的改名文件...>
 把改名文件移到 已上传\\<本周一YYMMDD>-<本周日YYMMDD>\\，原视频送回收站。"""
 import datetime, os, shutil, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config
 
-ROOT = r'F:\钟海明\素材命名上传'
+ROOT = config.load()['root']
 
 
 def week_dir(d=None):

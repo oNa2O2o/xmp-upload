@@ -14,7 +14,9 @@ import glob, hashlib, json, os, re, shutil, subprocess, sys, time
 HERE = os.path.dirname(os.path.abspath(__file__))
 UP = HERE
 sys.path.insert(0, UP)
-ROOT = r'F:\钟海明\素材命名上传'
+import config
+CFG = config.load()
+ROOT = CFG['root']
 INBOX = os.path.join(ROOT, '输入')
 VIDEO = ('.mp4', '.mov', '.m4v')
 NAMED = re.compile(r'^\d{6}-[A-Z]+-[VP]-')

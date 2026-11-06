@@ -1,7 +1,7 @@
 ---
 name: xmp-upload
-version: 4.0.0
-description: 素材「（可选）套版 → 命名 → 上传 XMP → 浏览器展示 → 归档」一条龙，三合一（原 xmp-upload + xmp-wrap-upload + video-wrap-design）。对 F:\钟海明\素材命名上传\输入 里的视频：按同名归组认竖/方/横，开工先列表跟用户确认哪些要套版补出方/横、哪些直接传；套版用生图做 MiraiMind 品牌设计（视频上下贴边、无边框、原音轨），再按素材命名台规则给每个尺寸 × 渠道（FB/GG/TT）改名，查重后后台无窗口上传到 XMP 的 MiraiMind素材库/<地区>/<渠道>/<性向>，浏览器打开对应文件夹展示，按周归档；也能撤回误传、只套版不上传。用户说「上传XMP」「素材命名上传」「重命名上传」「传素材」「素材入库」「套版上传」「出三个尺寸再上传」「视频套版」「竖版转方版横版」「把这个视频包装成1:1和16:9」「撤回XMP」或调用 /skill:xmp-upload 时使用。逐词字幕/互动选项包装不是本 skill（用 mm-workbench-v5）。
+version: 4.1.0
+description: 素材「（可选）套版 → 命名 → 上传 XMP → 浏览器展示 → 归档」一条龙，三合一（原 xmp-upload + xmp-wrap-upload + video-wrap-design）。对 <工作目录>\输入 里的视频（工作目录、设计师代号存在 config.json，首次运行先问设计师姓名自动配置）：按同名归组认竖/方/横，开工先列表跟用户确认哪些要套版补出方/横、哪些直接传；套版用生图做 MiraiMind 品牌设计（视频上下贴边、无边框、原音轨），再按素材命名台规则给每个尺寸 × 渠道（FB/GG/TT）改名，查重后后台无窗口上传到 XMP 的 MiraiMind素材库/<地区>/<渠道>/<性向>，浏览器打开对应文件夹展示，按周归档；也能撤回误传、只套版不上传。用户说「上传XMP」「素材命名上传」「重命名上传」「传素材」「素材入库」「套版上传」「出三个尺寸再上传」「视频套版」「竖版转方版横版」「把这个视频包装成1:1和16:9」「撤回XMP」或调用 /skill:xmp-upload 时使用。逐词字幕/互动选项包装不是本 skill（用 mm-workbench-v5）。
 ---
 
 # XMP 素材：套版（可选）→ 命名 → 上传 → 展示 → 归档
@@ -16,15 +16,30 @@ description: 素材「（可选）套版 → 命名 → 上传 XMP → 浏览器
 | [references/prompts.md](references/prompts.md) | 套版生图提示词、文案库、案例（女警、JP 13 条） |
 | [references/wrap-design.md](references/wrap-design.md) | 套版设计与合成细则（源文件、贴边、品牌文字、音轨、已知失败） |
 | [references/wrap-scripts.md](references/wrap-scripts.md) | 合成脚本的命令行 / 模块用法 |
-| `assets/` | MiraiMind 图标、字标、商店按钮 |
+| `scripts/config.py` | 个人配置（设计师、工作目录、Chrome、登录态目录），首次使用 setup |
+| `assets/` | MiraiMind 图标、字标、商店按钮、`素材命名台.html`（命名规则源，自带一份） |
 
-## 固定路径
+## 零、每次开工先查配置（首次使用自动初始化）
 
-- 输入：`F:\钟海明\素材命名上传\输入`；任务目录 `输入\_处理中\<名>\`
-- 归档：`F:\钟海明\素材命名上传\已上传\<本周一YYMMDD>-<本周日YYMMDD>`（例 `261019-261025`）
-- 套版设计：`F:\钟海明\素材命名上传\套版\<名>\`（设计图、wrap.json、检查帧，永久保留，同角色同地区可复用）
-- 命名规则源：`F:\钟海明\素材命名上传\素材命名台.html`（脚本实时读取其中 `const D = {...}`，规则/标签更新了不用改脚本）
-- XMP 登录态：Chrome 配置目录 `F:\钟海明\素材命名上传\.xmp_profile`，CDP 端口 9333。**登录态已保存，不要退出、不要换目录、不要让用户重新登录。**
+每次任务开始先跑 `python scripts/config.py check`：
+
+- 打印 `OK` + 配置 → 记下 `designer`（设计师代号）和 `root`（工作目录），直接进入第一步。若提示缺依赖，先帮用户装（`pip install playwright pillow numpy`、`winget install Gyan.FFmpeg`；playwright 只连本机 Chrome，不用 `playwright install`）。
+- 打印 `NEED_SETUP`（退出码 10，说明是第一次用）→ **先问用户：「你的设计师姓名是？」**（可顺带问工作目录放哪，不说就用默认），然后
+  `python scripts/config.py setup --name <姓名> [--root <工作目录>]`
+  - 姓名在命名台花名册里 → 自动换成代号（如 钟海明=ZHM）。
+  - 返回 `NEED_CODE` → 花名册没有此人，问用户的设计师代号（2–4 个大写字母，一般是姓名拼音首字母），加 `--code` 重跑。
+  - setup 会建好 `输入/已上传/套版`、复制命名台、找 Chrome、检查依赖。默认工作目录：有 F 盘 `F:\<姓名>\素材命名上传`，否则 `~\素材命名上传`。
+  - 然后 `python scripts/xmp.py check`；`NOT_LOGGED_IN` → `xmp.py login` 弹出窗口让用户登录 XMP（用自己账号），登录好后 `xmp.py headless` 切回后台。
+  - 初始化完告诉用户：把要传的视频放进 `<工作目录>\输入`。
+- 要改姓名/代号/目录：重跑 `setup`（登录态目录跟着工作目录走，换目录要重新登录）。`config.json` 是个人文件，不进 git，分享 skill 时不带。
+
+## 固定路径（`<工作目录>` = config.json 的 `root`）
+
+- 输入：`<工作目录>\输入`；任务目录 `输入\_处理中\<名>\`
+- 归档：`<工作目录>\已上传\<本周一YYMMDD>-<本周日YYMMDD>`（例 `261019-261025`）
+- 套版设计：`<工作目录>\套版\<名>\`（设计图、wrap.json、检查帧，永久保留，同角色同地区可复用）
+- 命名规则源：`<工作目录>\素材命名台.html`（没有就用 skill 自带的 `assets\素材命名台.html`；脚本实时读取其中 `const D = {...}`，命名台更新了把新版放进工作目录即可，不用改脚本）
+- XMP 登录态：Chrome 配置目录 `<工作目录>\.xmp_profile`，CDP 端口 9333（config.json 的 `cdp_port`）。**登录过一次就保存了，不要退出、不要换目录、不要让用户反复登录。**
 - 这个 Chrome 默认无窗口（`--headless=new`），后台跑不抢焦点，和用户日常 Chrome 是两个进程，脚本只杀带 `xmp_profile` 的进程。登录失效时 `xmp.py login` 开带窗口的给用户登录，登录完 `xmp.py headless` 切回后台。
 - 文件夹 id 通过接口拿（`xmp.py folders`，缓存 `folder_ids.json`）。
 
@@ -72,7 +87,7 @@ description: 素材「（可选）套版 → 命名 → 上传 XMP → 浏览器
 | 渠道 | FB / GG / TT，每个渠道出一个文件 | 默认 FB,GG,TT |
 | 序号 | 该设计师当天第几条 | `xmp.py seq [YYMMDD] [设计师]` 的 NEXT；内容不同的视频各占一个序号 |
 
-- 自动：日期=今天；时长=ffprobe 取最近档位（6/15/30/40秒）；尺寸=分辨率（竖/横/方）；设计师=ZHM；版本=1（重名或用户指定时递增）。
+- 自动：日期=今天；时长=ffprobe 取最近档位（6/15/30/40秒）；尺寸=分辨率（竖/横/方）；设计师=config.json 的 `designer`（下文示例里的 ZHM 换成用户自己的代号）；版本=1（重名或用户指定时递增）。
 - 编号 `{T月日设计师序号}`：**一条素材所有尺寸 × 渠道 × 版本共用一个**；不能给两条内容不同的素材（`naming.py build` 查本地，冲突时 `--apply` 拒绝）。已用过的不改；误传的从 XMP 删除并复查无残留后可复用。旧格式 `{material20261021MZHM1}` 脚本仍能识别。
 - 规则改版批量改历史：`naming.py convert <旧名>` → 对照表 json → `rename_xmp.py <对照表> [--only 关键字] [--apply]`（接口 updateName，保留素材 ID，不重传）→ 本地 os.rename。
 

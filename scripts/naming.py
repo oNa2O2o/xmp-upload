@@ -1,4 +1,4 @@
-"""素材命名：规则全部实时读取自 F:\\钟海明\\素材命名上传\\素材命名台.html 里的 `const D = {...}`。
+"""素材命名：规则全部实时读取自 <工作目录>\\素材命名台.html（没有就用 skill 自带 assets\\素材命名台.html） 里的 `const D = {...}`。
 
 2026-10-22 新规则（素材命名台_20261022_T编号_保留画风）：
   视频 V: 日期-地区-V-类型-面向-时长｜画风｜【标签】｜{T月日设计师序号}｜-渠道-设计师-尺寸-版本
@@ -11,7 +11,7 @@
   python naming.py probe <视频>                   # 时长档位 + 尺寸
   python naming.py tags <地区> <关键词...>         # 按中文/日文关键词搜标签 id
   python naming.py build <视频> --region JP --type 原创 --gender 男性向 --style 2D --tags 159,46,414
-      --seq 1 --channels FB,GG,TT [--form V] [--designer ZHM] [--version 1] [--date 261019] [--duration 40秒] [--size 竖] [--apply]
+      --seq 1 --channels FB,GG,TT [--form V] [--designer 默认取 config.json] [--version 1] [--date 261019] [--duration 40秒] [--size 竖] [--apply]
   不加 --apply 只预览命名；加 --apply 才在原文件所在文件夹里按渠道复制出改名文件（原文件保留）。
   --seq = 素材编号里的序号：该设计师当天第几条素材（10-22 起编号带设计师代码，同事实际也按人各自从 1 数）。
           默认值用 `python xmp.py seq [YYMMDD] [设计师]` 查（XMP + 本地里该设计师当天已用最大序号 + 1，新旧编号格式都算）。
@@ -20,9 +20,11 @@
   python naming.py convert <旧文件名>             # 旧规则文件名 -> 新规则文件名（批量改名用，见 rename_v3.py）
 """
 import argparse, datetime, json, os, re, shutil, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config
 
-ROOT = r'F:\钟海明\素材命名上传'
-HTML = os.path.join(ROOT, '素材命名台.html')
+CFG = config.load()
+ROOT = CFG['root']
 STYLES = ['真人', '2D', '3D', '无']   # 命名台 artstyles + 用户规定的「无」（如欲求金字塔这类无角色素材）
 STYLE_ALIAS = {'二次元': '2D', '二维': '2D', '2d': '2D', '三维': '3D', '3d': '3D', '真人风格': '真人', '写实真人': '真人'}
 DUR_SECS = {'6秒': 6, '15秒': 15, '30秒': 30, '40秒': 40}
@@ -64,12 +66,7 @@ def local_names():
 
 
 def load_D():
-    with open(HTML, encoding='utf-8') as fh:
-        for line in fh:
-            s = line.strip()
-            if s.startswith('const D = '):
-                return json.loads(s[len('const D = '):].rstrip(';'))
-    sys.exit('素材命名台.html 里找不到 const D')
+    return config.load_D(config.html_path(ROOT))
 
 
 def probe(path):
@@ -166,7 +163,7 @@ def main():
         ap.add_argument('video'); ap.add_argument('--region', required=True); ap.add_argument('--type', required=True)
         ap.add_argument('--gender', required=True); ap.add_argument('--form', default='V')
         ap.add_argument('--style', required=True); ap.add_argument('--tags', required=True)
-        ap.add_argument('--channels', default='GG'); ap.add_argument('--designer', default='ZHM'); ap.add_argument('--version', type=int, default=1)
+        ap.add_argument('--channels', default='GG'); ap.add_argument('--designer', default=CFG['designer']); ap.add_argument('--version', type=int, default=1)
         ap.add_argument('--seq', type=int)
         ap.add_argument('--date', default=datetime.date.today().strftime('%y%m%d'))
         ap.add_argument('--duration'); ap.add_argument('--size'); ap.add_argument('--apply', action='store_true')
