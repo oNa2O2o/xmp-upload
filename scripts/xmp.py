@@ -138,6 +138,16 @@ def api_token(pg):
     return _TOKEN['v']
 
 
+def api_get(pg, path, params, tries=2):
+    """GET 接口拿 JSON；偶发空响应 / 非 JSON 时重试一次。"""
+    for k in range(tries):
+        r = pg.request.get(API + path, headers={'authorization': api_token(pg)}, params=params)
+        try: return r.json()
+        except Exception:
+            if k == tries - 1: raise
+            time.sleep(3)
+
+
 def folder_map(pg):
     """{'JP/Facebook/男性向': 'company_…', …} for everything under LIB, via API; saved to folder_ids.json."""
     r = pg.request.post(API + '/material_center/folder/config', data={'zone': 'company'}, headers={'authorization': api_token(pg)})
@@ -159,10 +169,10 @@ def folder_id(pg, path):
 
 
 def list_names(pg, fid, n=100):
-    r = pg.request.get(API + '/mediacenter/manage/searchList', headers={'authorization': api_token(pg)},
-                       params={'page': 1, 'page_size': n, 'folder_id': fid, 'show_deep': 0, 'show_stats': 0,
+    j = api_get(pg, '/mediacenter/manage/searchList',
+                       {'page': 1, 'page_size': n, 'folder_id': fid, 'show_deep': 0, 'show_stats': 0,
                                'column_list': 'id,name', 'is_export': 0, 'media_source': 'local', 'is_global': 0})
-    return [x['name'] for x in r.json()['data']['list']]
+    return [x['name'] for x in j['data']['list']]
 
 
 ROOT_FOLDER = 'company_111496979'   # MiraiMind素材库
@@ -170,12 +180,12 @@ ROOT_FOLDER = 'company_111496979'   # MiraiMind素材库
 
 def recent_names(pg, n=2000):
     """MiraiMind素材库全部子文件夹里最新的 n 个素材名（接口按上传时间倒序；keyword 参数会被忽略）。"""
-    tok, out = api_token(pg), []
+    out = []
     for page in range(1, n // 500 + 1):
-        r = pg.request.get(API + '/mediacenter/manage/searchList', headers={'authorization': tok},
-                           params={'page': page, 'page_size': 500, 'folder_id': ROOT_FOLDER, 'show_deep': 1, 'show_stats': 0,
-                                   'column_list': 'id,name', 'is_export': 0, 'media_source': 'local', 'is_global': 0})
-        lst = r.json()['data']['list']; out += [x['name'] for x in lst]
+        lst = api_get(pg, '/mediacenter/manage/searchList',
+                      {'page': page, 'page_size': 500, 'folder_id': ROOT_FOLDER, 'show_deep': 1, 'show_stats': 0,
+                       'column_list': 'id,name', 'is_export': 0, 'media_source': 'local', 'is_global': 0})['data']['list']
+        out += [x['name'] for x in lst]
         if len(lst) < 500: break
     return out
 

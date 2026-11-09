@@ -1,0 +1,58 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Mincho;src:url(assets/ZenOldMincho-Medium.ttf)}
+@font-face{font-family:NS;src:url(assets/NotoSansJP-Medium.otf);font-weight:500}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:var(--W);height:1080px;overflow:hidden;background:#000}
+body{--ink:#0F1530;--sub:rgba(15,21,48,.62);--line:rgba(15,21,48,.28);--veil:rgba(250,250,255,.58)}
+body.dark{--ink:#fff;--sub:rgba(255,255,255,.66);--line:rgba(255,255,255,.32);--veil:rgba(8,9,16,.62)}
+.bg{position:absolute;inset:-120px;background-size:cover;background-position:center;filter:blur(70px) saturate(1.1)}
+.veil{position:absolute;inset:0;background:var(--veil)}
+.video{position:absolute;top:0;width:608px;height:1080px;background-size:cover;background-position:center}
+.panel{position:absolute;top:0;height:1080px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-family:NS;text-align:center}
+.icon{width:150px;height:150px;border-radius:34px;background:url(assets/icon.png) center/cover}
+.word{width:340px;margin-top:28px;display:block}
+body:not(.dark) .word{filter:brightness(0);opacity:.88}
+.tag{font-family:Mincho;font-size:46px;letter-spacing:.02em;margin-top:48px;line-height:1.35;white-space:nowrap}
+.rule{width:44px;height:1px;background:var(--line);margin:30px 0}
+.pts{font-weight:500;font-size:30px;color:var(--sub);letter-spacing:.04em;line-height:1.7}
+.btns{display:flex;flex-direction:column;gap:20px;margin-top:56px}
+.badges{display:flex;gap:14px;margin-top:56px;align-items:center}
+.badges img{height:60px;display:block}
+.btn{width:410px;height:86px;border:2px solid var(--line);border-radius:43px;display:flex;align-items:center;justify-content:center;gap:14px;font-size:27px;font-weight:500;letter-spacing:.02em;color:var(--ink)}
+.btn svg{width:32px;height:32px;fill:var(--ink)}
+</style></head>
+<body>
+<div class="bg" id="bg"></div><div class="veil"></div>
+<div class="video" id="video"></div>
+<div id="panels"></div>
+<script>
+const q=new URLSearchParams(location.search);
+const mode=q.get('mode')||'sq', W=mode==='sq'?1080:1920;
+document.documentElement.style.setProperty('--W',W+'px');
+if(q.get('theme')==='dark')document.body.classList.add('dark');
+const bg='bg/'+q.get('bg')+'.png';
+document.getElementById('bg').style.backgroundImage=`url(${bg})`;
+const v=document.getElementById('video');
+v.style.backgroundImage=`url(${bg})`; v.style.left=(mode==='sq'?0:656)+'px';
+// 文案：URL 参数 t=标语 d=描述（<br> 断行）；没传时用下面的 JP 示例组（看板验证过的高消耗高回收文案）
+const COPY=q.get('t')?[q.get('t'),q.get('d')||'']:{
+ a:['甘やかされて、<br>溺れる。','溺愛に上限がない<br>AI恋人。'],
+ b:['禁止なしで話せる<br>AI恋人','背徳感に震える、<br>刺激的なシチュエーション。'],
+ c:['ガチャより危険','誰にも言えない<br>秘密の関係が、今始まる']
+}[q.get('c')||'a'];
+const tag=COPY[0];
+const logo=`<div class="icon"></div><img class="word" src="assets/word.png">`;
+const brand=`${logo}<div class="tag">${tag}</div>`;
+const pts=`<div class="rule"></div><div class="pts">${COPY[1]}</div>`;
+const btns=`<div class="badges"><img src="assets/as.png"><img src="assets/gp.png"></div>`;
+const P=document.getElementById('panels');
+if(mode==='sq'){
+  P.innerHTML=`<div class="panel" style="left:608px;width:472px">${brand}${pts}${btns}</div>`;
+}else{
+  const Z=s=>`<div style="zoom:1.3;display:flex;flex-direction:column;align-items:center">${s}</div>`;
+  P.innerHTML=`<div class="panel" style="left:0;width:656px"><div style="zoom:1.55;display:flex;flex-direction:column;align-items:center">${logo}</div></div>
+  <div class="panel" style="left:1264px;width:656px">${Z(`<div class="tag" style="margin-top:0">${tag}</div>${pts}${btns}`)}</div>`;
+}
+</script></body></html>

@@ -84,14 +84,16 @@ def cmd_start(name, files):
     src = {}
     for f in files:
         i = probe(f); dst = os.path.join(d, os.path.basename(f))
-        shutil.move(f, dst); src[i['size']] = dst
+        shutil.move(f, dst)
+        k = i['size'] if i['size'] not in src else f"{i['size']}:{os.path.basename(f)}"   # 多条同尺寸素材各记一条
+        src[k] = dst
     save(d, {'name': name, 'created': time.strftime('%Y-%m-%d %H:%M'), 'sources': src, 'wrapped': {}, 'named': [], 'dup': []})
     print('任务目录', d); print(json.dumps(src, ensure_ascii=False, indent=1))
 
 
 def cmd_collect(d):
     m = load(d)
-    m['wrapped'] = {k: f for k in ('方', '横') for f in glob.glob(os.path.join(d, f'*_{k}.mp4'))
+    m['wrapped'] = {os.path.basename(f): f for k in ('方', '横') for f in glob.glob(os.path.join(d, f'*_{k}.mp4'))
                     if f not in m['sources'].values()}
     m['named'] = sorted(f for f in glob.glob(os.path.join(d, '*')) if NAMED.match(os.path.basename(f)))
     save(d, m); print(f'清单: 改名文件 {len(m["named"])} 个，套版成片 {list(m["wrapped"])}')
@@ -99,11 +101,11 @@ def cmd_collect(d):
 
 
 def xmp_list(pg, fid):
-    from xmp import API, api_token
-    r = pg.request.get(API + '/mediacenter/manage/searchList', headers={'authorization': api_token(pg)},
-                       params={'page': 1, 'page_size': 500, 'folder_id': fid, 'show_deep': 0, 'show_stats': 0,
-                               'column_list': 'id,name,file_md5', 'is_export': 0, 'media_source': 'local', 'is_global': 0})
-    return r.json()['data']['list']
+    from xmp import api_get
+    j = api_get(pg, '/mediacenter/manage/searchList',
+                {'page': 1, 'page_size': 500, 'folder_id': fid, 'show_deep': 0, 'show_stats': 0,
+                 'column_list': 'id,name,file_md5', 'is_export': 0, 'media_source': 'local', 'is_global': 0})
+    return j['data']['list']
 
 
 def cmd_dupcheck(d, drop=False):
