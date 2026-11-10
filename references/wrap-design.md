@@ -10,7 +10,7 @@
 - 默认交付：1080×1080 方版、1920×1080 横版，输出到用户指定目录下的 `成品`；用户给出其他要求时优先遵守。
 - 生图前阅读当前会话提供的 `image-gen` 技能。用 `image_generate` 生成完整套版，模型用 image2.5（gpt-image-2.5-flare），设置不是它就先提醒用户切换；不假设工具一定接受某尺寸。
 - 合成工具：Python 3、Pillow、numpy（仅 `wrap_config.py` 量边界用）、FFmpeg、FFprobe；不依赖工作台服务。命令行与模块用法见 [wrap-scripts.md](wrap-scripts.md)。
-- 视频内部字幕、选项、进度条、尾板等修改交给 `mm-workbench-v5`；剧情翻译交给相应文案技能。
+- 视频内部字幕、选项、进度条、尾板等修改交给 `mm-packager`；剧情翻译交给相应文案技能。
 
 ## 核心原则
 
