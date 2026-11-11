@@ -5,7 +5,7 @@
     theme: light（浅色视频）/ dark（深色视频）
     copy : copy.json 的 key，值为 ["标语", "描述"]（<br> 断行；取自投放看板验证过的文案）；
            不传 --copy 时用模板内置的 JP 示例组 a/b/c
-  不传 --spec 时全部 dark:a。
+  不传 --spec（或 spec 没命中）时：深浅按视频平均亮度自动选，文案组 a。
 
 输出：任务目录里 <原片名>_方.mp4 / _横.mp4；<任务目录>/h5work/ 下的面板 png 和检查帧（交付前人工看）。
 原片列表只读 manifest.json 的 sources，不按目录通配。
@@ -48,14 +48,21 @@ def main():
     jobs = []
     for i, f in enumerate(srcs, 1):
         stem = os.path.splitext(os.path.basename(f))[0]; bid = f'{i:02d}'
-        theme, copy = 'dark', 'a'
+        bgf = work / 'bg' / f'{bid}.png'
+        theme, copy = None, 'a'
         for s in a.spec:
             k, v = s.split('=')
             if k in stem: theme, copy = v.split(':')
-        sh('ffmpeg', '-v', 'error', '-y', '-ss', str(round(dur(f) * .35, 2)), '-i', f, '-frames:v', '1', '-update', '1', str(work / 'bg' / f'{bid}.png'))
+        sh('ffmpeg', '-v', 'error', '-y', '-ss', str(round(dur(f) * .35, 2)), '-i', f, '-frames:v', '1', '-update', '1', str(bgf))
+        if not theme:   # 没指定深浅：按整条视频平均亮度选（暗色 / 夜景用深色面板）
+            y = subprocess.run(['ffmpeg', '-i', f, '-vf', 'fps=1/3,scale=64:-1,signalstats,metadata=print:key=lavfi.signalstats.YAVG',
+                                '-f', 'null', '-'], capture_output=True, text=True).stderr
+            ys = [float(l.split('=')[1]) for l in y.splitlines() if 'YAVG=' in l]
+            theme = 'light' if ys and sum(ys) / len(ys) > 110 else 'dark'
         jobs.append((f, stem, bid, theme, copy))
     with sync_playwright() as p:
-        b = p.chromium.launch()
+        _chrome = os.environ.get("CHROME")
+        b = p.chromium.launch(executable_path=_chrome) if _chrome and os.path.exists(_chrome) else p.chromium.launch(channel="msedge")
         for f, stem, bid, theme, copy in jobs:
             for mode, w in (('sq', 1080), ('ls', 1920)):
                 pg = b.new_page(viewport={'width': w, 'height': 1080})

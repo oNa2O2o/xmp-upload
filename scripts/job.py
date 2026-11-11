@@ -4,7 +4,7 @@
   start  <名> <文件...>             把这条素材的文件移到 输入\\_处理中\\<名>\\，写 manifest.json
   collect <任务目录>               naming --apply 之后，把改名文件记进清单
   dupcheck <任务目录> [--drop]      按内容 MD5 + 文件名查 XMP 目标文件夹；--drop 把重复的移到 重复未传\\
-  upload <任务目录> [--dry]         只上传清单里的改名文件（调用同目录 upload.py）
+  upload <任务目录> [--dry] [--bg]  上传清单里的改名文件（XMP 已有同名的跳过=续传；--bg 后台跑写 upload.log）
   show   <任务目录> [--print]       上传完成后，用用户的默认浏览器打开每个目标文件夹的 XMP 列表页给用户看（不截图）
   finish <任务目录>                 改名文件归档；原片和中间成片进回收站；删掉空任务目录
 运行前 export PYTHONIOENCODING=utf-8。
@@ -149,11 +149,17 @@ def cmd_dupcheck(d, drop=False):
     if dups and not drop: sys.exit(3)
 
 
-def cmd_upload(d, dry=False):
+def cmd_upload(d, dry=False, bg=False):
+    """同名已在 XMP 的跳过（续传）；--bg 后台跑，日志写 <任务目录>/upload.log。"""
     m = load(d)
     if not m['named']: raise SystemExit('清单里没有要上传的文件')
-    r = subprocess.run([sys.executable, os.path.join(UP, 'upload.py'), *m['named']] + (['--dry'] if dry else []))
-    sys.exit(r.returncode)
+    cmd = [sys.executable, os.path.join(UP, 'upload.py'), *m['named'], '--resume'] + (['--dry'] if dry else [])
+    if bg:
+        log = os.path.join(d, 'upload.log')
+        subprocess.Popen(cmd, stdout=open(log, 'w', encoding='utf-8'), stderr=subprocess.STDOUT,
+                         creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        print('后台上传中，日志', log); return
+    sys.exit(subprocess.run(cmd).returncode)
 
 
 def cmd_show(d, dry=False):
@@ -175,6 +181,8 @@ def cmd_finish(d):
         if os.path.exists(f): recycle(f); print('回收站', os.path.basename(f))
     for x in glob.glob(os.path.join(d, '重复未传')):
         if not os.listdir(x): os.rmdir(x)
+    for x in ('h5work', 'upload.log'):
+        if os.path.exists(os.path.join(d, x)): recycle(os.path.join(d, x))
     left = [x for x in os.listdir(d) if x != 'manifest.json']
     if left: print('⚠ 任务目录还有文件，未删除:', left)
     else:
@@ -193,7 +201,7 @@ if __name__ == '__main__':
     elif c == 'start': cmd_start(rest[0], rest[1:])
     elif c == 'collect': cmd_collect(rest[0])
     elif c == 'dupcheck': cmd_dupcheck(rest[0], '--drop' in a)
-    elif c == 'upload': cmd_upload(rest[0], '--dry' in a)
+    elif c == 'upload': cmd_upload(rest[0], '--dry' in a, '--bg' in a)
     elif c == 'show': cmd_show(rest[0], '--print' in a)
     elif c == 'finish': cmd_finish(rest[0])
     else: print(__doc__)

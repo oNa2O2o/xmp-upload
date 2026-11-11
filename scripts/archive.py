@@ -15,9 +15,11 @@ def week_dir(d=None):
 
 
 def recycle(path):
+    """文件或文件夹送回收站。"""
+    k = 'Directory' if os.path.isdir(path) else 'File'
     p = os.path.abspath(path).replace("'", "''")
     subprocess.run(['powershell.exe', '-NoProfile', '-Command',
-                    "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile("
+                    f"Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::Delete{k}("
                     f"'{p}','OnlyErrorDialogs','SendToRecycleBin')"], check=True)
 
 

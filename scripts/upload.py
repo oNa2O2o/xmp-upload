@@ -44,15 +44,21 @@ def main():
     files = [a for a in args if not a.startswith('--') and os.path.isfile(a)]
     bad = [a for a in args if not a.startswith('--') and not a.isdigit() and not os.path.isfile(a)]
     if bad: raise SystemExit(f'文件不存在: {bad}')
+    resume = '--resume' in args
     jobs = [{'f': f, 'name': os.path.basename(f), 'path': target(f)} for f in files]
     with sync_playwright() as p:
         b, main_pg = get_page(p)
         if not logged_in(main_pg): raise SystemExit('NOT_LOGGED_IN：运行 python xmp.py login 让用户登录一次')
+        names, keep = {}, []
         for j in jobs:
             stem = os.path.splitext(j['name'])[0]
             j['fid'] = folder_id(main_pg, j['path'])
-            if any(stem in n for n in list_names(main_pg, j['fid'])):
-                raise SystemExit(f'XMP 该文件夹已有同名素材，先改版本号: {j["name"]}')
+            if j['fid'] not in names: names[j['fid']] = list_names(main_pg, j['fid'])
+            if any(stem in n for n in names[j['fid']]):
+                if not resume: raise SystemExit(f'XMP 该文件夹已有同名素材，先改版本号: {j["name"]}')
+                print('SKIP 已在 XMP', j['name'], flush=True); continue
+            keep.append(j)
+        jobs = keep
         for j in jobs:
             j['fid'] = folder_id(main_pg, j['path'])
             print('→', j['path'], j['fid'], j['name'], flush=True)
