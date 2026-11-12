@@ -17,7 +17,7 @@ def target(path):
 
 
 def count(pg):
-    m = re.search(r'已上传素材数[:：]\s*(\d+)', pg.evaluate('()=>document.body.innerText'))
+    m = re.search(r'(?:已上传素材数|Number of uploaded materials)\s*[:：]\s*(\d+)', pg.evaluate('()=>document.body.innerText'))   # 中英文界面都认
     return int(m.group(1)) if m else -1
 
 
@@ -78,13 +78,13 @@ def main():
             for j in list(active):
                 pg = j['pg']; txt = pg.evaluate('()=>document.body.innerText').replace('素材上传中', '')
                 n = count(pg)
-                uploading = '上传中' in txt or re.search(r'\d+%', txt)
+                uploading = '上传中' in txt or 'Uploading' in txt or re.search(r'\d+%', txt)   # 中英文界面都认（新登录配置默认英文界面）
                 if n >= 1 and not uploading:
                     active.remove(j)
                     stem = os.path.splitext(j['name'])[0]
                     if n != 1 or stem[:20] not in txt:
                         j['ok'] = False; j['err'] = f'上传页异常 n={n}'; pg.close(); done.append(j); continue
-                    clean(pg); pg.get_by_role('button', name='确定').last.click(); pg.wait_for_timeout(4000)
+                    clean(pg); pg.get_by_role('button', name=re.compile(r'^\s*(确定|OK)\s*$')).last.click(); pg.wait_for_timeout(4000)
                     pg.close()
                     j['ok'] = verify(main_pg, j['fid'], j['name']); j['err'] = '' if j['ok'] else '列表里找不到'
                     done.append(j)

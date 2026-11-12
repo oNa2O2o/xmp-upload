@@ -1,6 +1,6 @@
 ---
 name: xmp-upload
-version: 4.3.1
+version: 4.3.2
 description: 素材「（可选）套版 → 命名 → 上传 XMP → 浏览器展示 → 归档」一条龙，三合一（原 xmp-upload + xmp-wrap-upload + video-wrap-design）。对 <工作目录>\输入 里的视频（工作目录、设计师代号存在 config.json，首次运行先问设计师姓名自动配置）：按同名归组认竖/方/横，开工先列表跟用户确认哪些要套版补出方/横、哪些直接传；套版默认用 H5 模板渲染 MiraiMind 品牌面板（视频上下贴边、无边框、原音轨），再按素材命名台规则给每个尺寸 × 渠道（FB/GG/TT）改名，查重后后台无窗口上传到 XMP 的 MiraiMind素材库/<地区>/<渠道>/<性向>，浏览器打开对应文件夹展示，按周归档；也能撤回误传、只套版不上传。用户说「上传XMP」「素材命名上传」「重命名上传」「传素材」「素材入库」「套版上传」「出三个尺寸再上传」「视频套版」「竖版转方版横版」「把这个视频包装成1:1和16:9」「撤回XMP」或调用 /skill:xmp-upload 时使用。逐词字幕/互动选项包装不是本 skill（用 mm-packager）。
 ---
 
@@ -160,6 +160,7 @@ description: 素材「（可选）套版 → 命名 → 上传 XMP → 浏览器
   - 文件夹树：`POST /material_center/folder/config {"zone":"company"}`
   - 列表：`GET /mediacenter/manage/searchList?folder_id=…`。接口慢，每页 100 条、超时 5 秒会 ReadTimeout；用每页 500 条、读超时 40 秒，多个文件夹并行读。
   - 删除：`POST /mediacenter/manage/delete`，body `id=<逗号分隔>&zone=company&show_deep=0&is_global=0`（`revoke.py` 已封装）。
+- XMP 界面可能是英文（新建的登录配置默认英文）：上传页按钮是「OK」、计数是「Number of uploaded materials」。upload.py 中英文都认；只认中文时会卡在「等传完」一直不动（2026-11-12 病娇女教师，两次卡住 50 分钟）。不要为此去改账号语言设置。
 - 选文件只能用 CDP `DOM.setFileInputFiles` 设一次；Playwright `set_input_files` 会超时但文件其实已加进去，再设就重复。`upload.py` 检查卡片数不是 1 就不点确定。
 - 上传页「过滤重复素材」默认勾选，XMP 已有同一视频时卡片数一直是 0 然后超时 → 告诉用户「XMP 已有重复素材」，不要自作主张取消勾选。
 - driver.js 新手引导遮罩挡点击，`xmp.clean()` 会删掉。左侧虚拟树点击不稳，上传不依赖它。
