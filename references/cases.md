@@ -4,7 +4,7 @@
 
 **最终成品**
 - 版式：H5「视频虚化底」。方版视频 0–608px；横版视频 656–1264px，左品牌（zoom 1.55）、右文案 + 下载标（zoom 1.3）。底 = 视频 35% 处帧 blur 70px + 浅 / 深半透明（签售会浅色，女騎士 / 少女深色）。
-- 字号：标语 Zen Old Mincho 46px，描述 Noto Sans JP 30px，下载标统一 60px 高（尾板 badges.png 拆出的 as.png / gp.png）。
+- 字号：标语 Zen Old Mincho 46px，描述 Noto Sans JP 30px，下载标统一 60px 高（as.png / gp.png 由 `assets/官方素材/` 的官方原图生成，两个外框同尺寸；2026-11-12 起，之前是从旧尾板 badges.png 拆的、两个不一样大）。
 - 文案（google-ads-creative-dashboard JP 付费组）：
   - 签售会「甘やかされて、溺れる。」/「溺愛に上限がないAI恋人。」（消耗 4.2k，回收 0.239）
   - 女騎士「禁止なしで話せるAI恋人」（83k）/「背徳感に震える、刺激的なシチュエーション。」（21k，回收 0.196）
